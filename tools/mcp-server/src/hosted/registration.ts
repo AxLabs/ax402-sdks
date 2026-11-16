@@ -11,6 +11,8 @@ export const WEB_CALLBACKS = new Set([
   "https://www.cursor.com/agents/mcp/oauth/callback",
   "https://vscode.dev/redirect",
   "https://insiders.vscode.dev/redirect",
+  // https://antigravity.google/docs/mcp#oauth
+  "https://antigravity.google/oauth-callback",
 ]);
 const loopback = new Set(["127.0.0.1", "[::1]", "localhost"]);
 export function loopbackRedirect(value: string): URL | undefined {
