@@ -1,6 +1,21 @@
 import httpx
+import json
 import pytest
-from launa_sdk import CardCheckout
+from launa_sdk import CardCheckout, LaunaClient
+
+
+def test_disconnect_binds_displayed_connection():
+    calls = []
+    def handle(request):
+        calls.append(request)
+        assert request.method == "DELETE"
+        assert request.headers["X-Launa-Environment"] == "development"
+        assert json.loads(request.content) == {"connection_id": "connection_sandbox"}
+        return httpx.Response(204)
+    with httpx.Client(transport=httpx.MockTransport(handle)) as http:
+        client = LaunaClient("https://control.example", environment="development", http_client=http)
+        client.card_payments.disconnect("connection_sandbox")
+    assert len(calls) == 1
 
 
 def test_token_preserved_and_redirect_not_followed():

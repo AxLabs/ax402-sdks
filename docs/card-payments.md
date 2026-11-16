@@ -29,6 +29,12 @@ removes card pricing; omission preserves it. A disabled card configuration is
 also supported, provided another payment rail remains configured.
 
 All SDKs expose connection, connect, complete, disconnect and payment history.
+
+Disconnect requires the `id` of the connection the user selected, in the same
+environment: TypeScript `client.cardPayments.disconnect(connection.id)`, Python
+`client.card_payments.disconnect(connection["id"])`, or Go
+`client.DisconnectStripe(ctx, connection.ID)`. The backend rejects a stale ID
+with HTTP 409. Do not automatically read a replacement ID and retry a disconnect.
 Link/unlink requires a JWT issued within 30 minutes; use the dashboard for the
 interactive OAuth redirect. Do not put a seller JWT or API key into buyer requests.
 

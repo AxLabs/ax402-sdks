@@ -2,6 +2,7 @@
  * retain it across retries and never create another token for an uncertain payment. */
 export type CardPaymentConfig = { enabled: boolean; currency: "usd"; amount_minor: string };
 export type StripeConnection = {
+  id?: string;
   available?: boolean;
   connected: boolean;
   ready: boolean;

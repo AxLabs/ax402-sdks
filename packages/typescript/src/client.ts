@@ -705,8 +705,11 @@ class CardPaymentsResource {
       body: JSON.stringify({ code, state }),
     });
   }
-  disconnect() {
-    return this.http.request<void>("/payment-accounts/stripe", { method: "DELETE" });
+  disconnect(connectionId: string) {
+    return this.http.request<void>("/payment-accounts/stripe", {
+      method: "DELETE",
+      body: JSON.stringify({ connection_id: connectionId }),
+    });
   }
   list() {
     return this.http.request<CardPayment[]>("/card-payments");

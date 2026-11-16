@@ -11,6 +11,7 @@ type CardPaymentConfig struct {
 	AmountMinor string `json:"amount_minor"`
 }
 type StripeConnection struct {
+	ID          string `json:"id,omitempty"`
 	Available   *bool  `json:"available,omitempty"`
 	Connected   bool   `json:"connected"`
 	Ready       bool   `json:"ready"`
@@ -45,8 +46,8 @@ func (c *Client) CompleteStripeConnection(ctx context.Context, code, state strin
 	err := c.do(ctx, http.MethodPost, "/payment-accounts/stripe/complete", map[string]string{"code": code, "state": state}, &out)
 	return &out, err
 }
-func (c *Client) DisconnectStripe(ctx context.Context) error {
-	return c.do(ctx, http.MethodDelete, "/payment-accounts/stripe", nil, nil)
+func (c *Client) DisconnectStripe(ctx context.Context, connectionID string) error {
+	return c.do(ctx, http.MethodDelete, "/payment-accounts/stripe", map[string]string{"connection_id": connectionID}, nil)
 }
 func (c *Client) ListCardPayments(ctx context.Context) ([]CardPayment, error) {
 	var out []CardPayment

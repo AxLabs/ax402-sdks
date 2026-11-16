@@ -1,7 +1,25 @@
 import { describe, it, expect } from "vitest";
 import { CardCheckout } from "./card.js";
+import { LaunaClient } from "./client.js";
 
 describe("hosted card payments", () => {
+  it("disconnects only the selected connection in the configured environment", async () => {
+    const client = new LaunaClient({
+      baseUrl: "https://control.example",
+      environment: "development",
+      fetch: async (_url, init) => {
+        expect(init?.method).toBe("DELETE");
+        expect(JSON.parse(String(init?.body))).toEqual({
+          connection_id: "connection_sandbox",
+        });
+        expect(new Headers(init?.headers).get("X-Launa-Environment")).toBe(
+          "development",
+        );
+        return new Response(null, { status: 204 });
+      },
+    });
+    await client.cardPayments.disconnect("connection_sandbox");
+  });
   it("uses one token for creation, polling and delivery without following redirects", async () => {
     const calls: RequestInit[] = [];
     const client = new CardCheckout("https://gateway.example/data", {
