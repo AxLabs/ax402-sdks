@@ -13,7 +13,14 @@ export const SCOPE_INCOME_READ = "income:read";
 export const SCOPE_INCOME_PAYOUT = "income:payout";
 export const SCOPE_SANDBOX_WALLET = "sandbox:wallet";
 
+export const SCOPE_PAYMENT_ACCOUNTS_READ = "payment_accounts:read";
+export const SCOPE_PAYMENT_ACCOUNTS_WRITE = "payment_accounts:write";
+export const SCOPE_PAYMENTS_READ = "payments:read";
+
 export const ALL_SCOPES = [
+  SCOPE_PAYMENT_ACCOUNTS_READ,
+  SCOPE_PAYMENT_ACCOUNTS_WRITE,
+  SCOPE_PAYMENTS_READ,
   SCOPE_APIS_READ,
   SCOPE_APIS_WRITE,
   SCOPE_ENDPOINTS_READ,
@@ -32,6 +39,8 @@ export const ALL_SCOPES = [
 
 export const SCOPE_PRESETS = {
   readonly: [
+    SCOPE_PAYMENT_ACCOUNTS_READ,
+    SCOPE_PAYMENTS_READ,
     SCOPE_APIS_READ,
     SCOPE_ENDPOINTS_READ,
     SCOPE_DOMAINS_READ,
@@ -42,6 +51,8 @@ export const SCOPE_PRESETS = {
     SCOPE_INCOME_READ,
   ],
   apiManager: [
+    SCOPE_PAYMENT_ACCOUNTS_READ,
+    SCOPE_PAYMENTS_READ,
     SCOPE_APIS_READ,
     SCOPE_APIS_WRITE,
     SCOPE_ENDPOINTS_READ,
@@ -50,17 +61,15 @@ export const SCOPE_PRESETS = {
     SCOPE_DOMAINS_WRITE,
     SCOPE_OPENAPI_READ,
   ],
-  analytics: [
-    SCOPE_STATS_READ,
-    SCOPE_SETTLEMENTS_READ,
-    SCOPE_BILLING_READ,
-    SCOPE_INCOME_READ,
-  ],
+  analytics: [SCOPE_STATS_READ, SCOPE_SETTLEMENTS_READ, SCOPE_BILLING_READ, SCOPE_INCOME_READ],
 } as const;
 
 export type ScopePreset = keyof typeof SCOPE_PRESETS;
 
 export const SCOPE_LABELS: Record<string, string> = {
+  [SCOPE_PAYMENT_ACCOUNTS_READ]: "Read Stripe connection",
+  [SCOPE_PAYMENT_ACCOUNTS_WRITE]: "Manage Stripe connection (recent sign-in required)",
+  [SCOPE_PAYMENTS_READ]: "Read card payments",
   [SCOPE_APIS_READ]: "Read APIs",
   [SCOPE_APIS_WRITE]: "Manage APIs",
   [SCOPE_ENDPOINTS_READ]: "Read endpoints",

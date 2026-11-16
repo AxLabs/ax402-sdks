@@ -120,3 +120,7 @@ pnpm --filter @launaio/sdk test
 ## Examples
 
 See [examples/typescript/](../../examples/typescript/) — setup API, pay gateway, stats, wrap OpenAPI. Run with `npx tsx examples/typescript/<script>.ts`.
+
+## Card payments
+
+See [hosted card acceptance](../../card-payments.md) for the unreleased seller API and buyer helpers.

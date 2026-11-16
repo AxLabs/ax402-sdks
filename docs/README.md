@@ -41,3 +41,7 @@ Dashboard guides (gateway setup, DNS, domains, billing): [launa.io/docs](https:/
 | `LAUNA_EVM_PRIVATE_KEY` | Buyer CLI/MCP pay |
 | `HEDERA_ACCOUNT_ID` | Buyer Hedera account |
 | `HEDERA_PRIVATE_KEY` | Buyer Hedera key |
+
+## Card payments
+
+See [seller card acceptance and hosted Checkout](card-payments.md) for configuration, buyer helpers and recovery (unreleased).

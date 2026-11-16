@@ -32,3 +32,7 @@ export function App() {
 ```bash
 pnpm --filter @launaio/react-paywall build
 ```
+
+## Card payments
+
+See [seller card acceptance and hosted Checkout](../../docs/card-payments.md) for configuration, buyer helpers and recovery (unreleased).

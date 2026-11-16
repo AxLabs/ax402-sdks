@@ -122,3 +122,5 @@ export type {
   RpcConfig,
   SelectionStrategy,
 } from './types.js'
+
+export { CardPaymentButton, type CardPaymentButtonProps } from "./CardPaymentButton.js"

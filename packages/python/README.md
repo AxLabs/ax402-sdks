@@ -33,3 +33,7 @@ result = BuyerClient.from_env().get("https://my-api.launa.io/v1/foo")
 ```
 
 See [docs/sdks/python](../../docs/sdks/python/README.md).
+
+## Card payments
+
+See [seller card acceptance and hosted Checkout](../../docs/card-payments.md) for configuration, buyer helpers and recovery (unreleased).

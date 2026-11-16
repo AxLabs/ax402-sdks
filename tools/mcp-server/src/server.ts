@@ -2,10 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolHandlers } from "./tools.js";
 
-export function createMcpServer(
-  handlers: ToolHandlers,
-  options: { buyerTools?: boolean } = {},
-) {
+export function createMcpServer(handlers: ToolHandlers, options: { buyerTools?: boolean } = {}) {
   const server = new McpServer({ name: "launa", version: "0.0.7" });
   function text(data: unknown) {
     return {
@@ -13,6 +10,20 @@ export function createMcpServer(
     };
   }
 
+  server.tool(
+    "launa_stripe_connection",
+    "Read the seller's Stripe card-acceptance connection in this environment. Requires payment_accounts:read. Linking is performed in the seller dashboard.",
+    {},
+    { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    async () => text(await handlers.stripeConnection()),
+  );
+  server.tool(
+    "launa_card_payments",
+    "List the seller's latest 100 card payments in this environment. Requires payments:read.",
+    {},
+    { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    async () => text(await handlers.cardPayments()),
+  );
   server.tool(
     "launa_sandbox_wallet",
     "Get or prepare the current user's dedicated Sandbox wallet, including its private key, public address and fork network. Requires sandbox:wallet and a Sandbox connection; unavailable in Live. May fund the wallet on the sandbox fork. Use the address for Sandbox API payouts and the key for explicitly authorized sandbox signing. Never echo the key into chat, logs or command arguments, commit it, or use it on another network. Does not reset the wallet or authorize payments.",
@@ -49,6 +60,17 @@ export function createMcpServer(
   });
 
   const endpointFields = {
+    card_payment: z
+      .object({
+        enabled: z.boolean(),
+        currency: z.literal("usd"),
+        amount_minor: z.string().regex(/^[1-9][0-9]*$/),
+      })
+      .nullable()
+      .optional()
+      .describe(
+        "Card price in USD cents; requires a linked Stripe account and permanent read-only GET endpoint. Use accepts: [] for card-only pricing.",
+      ),
     method: z.string().optional(),
     path_pattern: z.string().optional(),
     description: z.string().optional(),
@@ -70,11 +92,8 @@ export function createMcpServer(
     clear_schemas: z.boolean().optional(),
   };
 
-  server.tool(
-    "launa_list_apis",
-    "List wrapped APIs. Requires apis:read scope.",
-    {},
-    async () => text(await handlers.listApis()),
+  server.tool("launa_list_apis", "List wrapped APIs. Requires apis:read scope.", {}, async () =>
+    text(await handlers.listApis()),
   );
 
   server.tool(
@@ -121,12 +140,7 @@ export function createMcpServer(
       settle_interval_secs: z.number().int().positive(),
       refund_interval_secs: z.number().int().positive(),
     },
-    async ({
-      api_id,
-      claim_interval_secs,
-      settle_interval_secs,
-      refund_interval_secs,
-    }) =>
+    async ({ api_id, claim_interval_secs, settle_interval_secs, refund_interval_secs }) =>
       text(
         await handlers.updateBatchSettings(
           api_id,
@@ -148,24 +162,21 @@ export function createMcpServer(
     "launa_set_cors",
     "Replace all allowed browser origins for an API. Requires apis:write.",
     { api_id: z.string(), origins: z.array(z.string()) },
-    async ({ api_id, origins }) =>
-      text(await handlers.setCors(api_id, origins)),
+    async ({ api_id, origins }) => text(await handlers.setCors(api_id, origins)),
   );
 
   server.tool(
     "launa_add_cors_origin",
     "Add one allowed browser origin to an API. Requires apis:write.",
     { api_id: z.string(), origin: z.string().url() },
-    async ({ api_id, origin }) =>
-      text(await handlers.addCorsOrigin(api_id, origin)),
+    async ({ api_id, origin }) => text(await handlers.addCorsOrigin(api_id, origin)),
   );
 
   server.tool(
     "launa_remove_cors_origin",
     "Remove one allowed browser origin from an API. Requires apis:write. Confirm with the user before calling.",
     { api_id: z.string(), origin: z.string().url() },
-    async ({ api_id, origin }) =>
-      text(await handlers.removeCorsOrigin(api_id, origin)),
+    async ({ api_id, origin }) => text(await handlers.removeCorsOrigin(api_id, origin)),
   );
 
   server.tool(
@@ -191,12 +202,7 @@ export function createMcpServer(
       discovery_contact_email: z.string().email().optional(),
       openapi_version: z.string().optional(),
     },
-    async ({
-      api_id,
-      discovery_guidance,
-      discovery_contact_email,
-      openapi_version,
-    }) =>
+    async ({ api_id, discovery_guidance, discovery_contact_email, openapi_version }) =>
       text(
         await handlers.setDiscoveryGuidance(
           api_id,
@@ -217,13 +223,7 @@ export function createMcpServer(
       response_schema: z.record(z.unknown()).optional(),
       clear_schemas: z.boolean().optional(),
     },
-    async ({
-      api_id,
-      endpoint_id,
-      request_schema,
-      response_schema,
-      clear_schemas,
-    }) =>
+    async ({ api_id, endpoint_id, request_schema, response_schema, clear_schemas }) =>
       text(
         await handlers.updateEndpointSchemas(
           api_id,
@@ -275,7 +275,8 @@ export function createMcpServer(
           name,
           slug,
           upstream_base_url,
-          pay_to_mode: pay_to_mode ?? (pay_to_address || pay_to_addresses ? "user_wallet" : undefined),
+          pay_to_mode:
+            pay_to_mode ?? (pay_to_address || pay_to_addresses ? "user_wallet" : undefined),
           pay_to_address,
           pay_to_addresses,
           discovery_guidance,
@@ -292,15 +293,14 @@ export function createMcpServer(
 
   server.tool(
     "launa_add_endpoint",
-    "Add a paid endpoint. Defaults to platform USDC; custom tokens require network, asset, and price or atomic amount. Requires endpoints:write.",
+    "Add a paid endpoint. card_payment configures hosted card acceptance through the seller’s linked Stripe account; accepts:[] selects cards only. Otherwise defaults to platform USDC; custom tokens require network, asset, and price or atomic amount. Requires endpoints:write.",
     {
       api_id: z.string(),
       ...endpointFields,
       method: z.string(),
       path_pattern: z.string(),
     },
-    async ({ api_id, ...input }) =>
-      text(await handlers.addEndpoint(api_id, input)),
+    async ({ api_id, ...input }) => text(await handlers.addEndpoint(api_id, input)),
   );
 
   server.tool(
@@ -319,8 +319,7 @@ export function createMcpServer(
     "launa_delete_endpoint",
     "Delete an endpoint. Requires endpoints:write. Confirm with the user before calling.",
     { api_id: z.string(), endpoint_id: z.string() },
-    async ({ api_id, endpoint_id }) =>
-      text(await handlers.deleteEndpoint(api_id, endpoint_id)),
+    async ({ api_id, endpoint_id }) => text(await handlers.deleteEndpoint(api_id, endpoint_id)),
   );
 
   server.tool(
@@ -338,10 +337,7 @@ export function createMcpServer(
       spec: z.string(),
       price_usdc: z.string().describe("User-approved per-endpoint USDC price; ask if missing"),
     },
-    async (args) =>
-      text(
-        await handlers.importOpenapi(args.api_id, args.spec, args.price_usdc),
-      ),
+    async (args) => text(await handlers.importOpenapi(args.api_id, args.spec, args.price_usdc)),
   );
 
   server.tool(
@@ -362,16 +358,14 @@ export function createMcpServer(
     "launa_verify_domain",
     "Verify domain DNS TXT record. Requires domains:write.",
     { api_id: z.string(), domain_id: z.string() },
-    async (args) =>
-      text(await handlers.verifyDomain(args.api_id, args.domain_id)),
+    async (args) => text(await handlers.verifyDomain(args.api_id, args.domain_id)),
   );
 
   server.tool(
     "launa_delete_domain",
     "Delete a custom domain. Requires domains:write. Confirm with the user before calling.",
     { api_id: z.string(), domain_id: z.string() },
-    async ({ api_id, domain_id }) =>
-      text(await handlers.deleteDomain(api_id, domain_id)),
+    async ({ api_id, domain_id }) => text(await handlers.deleteDomain(api_id, domain_id)),
   );
 
   server.tool(
@@ -397,8 +391,7 @@ export function createMcpServer(
     "launa_stats_api",
     "Per-API analytics. Requires stats:read.",
     { api_id: z.string(), days: z.number().optional() },
-    async ({ api_id, days }) =>
-      text(await handlers.statsApi(api_id, days ?? 30)),
+    async ({ api_id, days }) => text(await handlers.statsApi(api_id, days ?? 30)),
   );
 
   server.tool(
@@ -425,9 +418,7 @@ export function createMcpServer(
       api_id: z.string().optional(),
     },
     async ({ days, limit, offset, api_id }) =>
-      text(
-        await handlers.settlementsHistory(days ?? 30, limit, offset, api_id),
-      ),
+      text(await handlers.settlementsHistory(days ?? 30, limit, offset, api_id)),
   );
 
   server.tool(
@@ -480,8 +471,7 @@ export function createMcpServer(
     "launa_apis_slug_check",
     "Check whether an API slug is available. Requires apis:read.",
     { slug: z.string(), exclude_api_id: z.string().optional() },
-    async ({ slug, exclude_api_id }) =>
-      text(await handlers.checkSlug(slug, exclude_api_id)),
+    async ({ slug, exclude_api_id }) => text(await handlers.checkSlug(slug, exclude_api_id)),
   );
 
   server.tool(
@@ -519,11 +509,8 @@ export function createMcpServer(
     );
   }
 
-  server.tool(
-    "launa_supported_networks",
-    "Facilitator supported payment networks.",
-    {},
-    async () => text(await handlers.supportedNetworks()),
+  server.tool("launa_supported_networks", "Facilitator supported payment networks.", {}, async () =>
+    text(await handlers.supportedNetworks()),
   );
 
   server.tool(

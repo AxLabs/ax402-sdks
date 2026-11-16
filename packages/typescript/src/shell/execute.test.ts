@@ -54,7 +54,9 @@ describe("runShellCommand", () => {
   });
 
   it("returns usage for missing flags", async () => {
-    const result = await runShellCommand(parseShellArgv(["apis", "create"]), { client: mockClient() });
+    const result = await runShellCommand(parseShellArgv(["apis", "create"]), {
+      client: mockClient(),
+    });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.kind).toBe("usage");
   });
@@ -82,20 +84,26 @@ describe("runShellCommand", () => {
 
   it("inspect url", async () => {
     const inspect = vi.fn().mockResolvedValue({ status: 402, paymentRequired: { accepts: [] } });
-    const result = await runShellCommand(parseShellArgv(["inspect", "url", "--url", "https://x.test/foo"]), {
-      client: mockClient(),
-      runInspectUrl: inspect,
-    });
+    const result = await runShellCommand(
+      parseShellArgv(["inspect", "url", "--url", "https://x.test/foo"]),
+      {
+        client: mockClient(),
+        runInspectUrl: inspect,
+      },
+    );
     expect(result.ok).toBe(true);
     expect(inspect).toHaveBeenCalledWith("https://x.test/foo", "GET");
   });
 
   it("x402 inspect alias", async () => {
     const inspect = vi.fn().mockResolvedValue({ status: 402, paymentRequired: { accepts: [] } });
-    const result = await runShellCommand(parseShellArgv(["x402", "inspect", "--url", "https://x.test/foo"]), {
-      client: mockClient(),
-      runInspectUrl: inspect,
-    });
+    const result = await runShellCommand(
+      parseShellArgv(["x402", "inspect", "--url", "https://x.test/foo"]),
+      {
+        client: mockClient(),
+        runInspectUrl: inspect,
+      },
+    );
     expect(result.ok).toBe(true);
     expect(inspect).toHaveBeenCalledWith("https://x.test/foo", "GET");
   });
@@ -104,7 +112,10 @@ describe("runShellCommand", () => {
     const client = mockClient({
       apis: { checkSlugAvailability: vi.fn().mockResolvedValue({ available: true }) },
     } as Partial<LaunaClient>);
-    const result = await runShellCommand(parseShellArgv(["apis", "slug-check", "--slug", "my-api"]), { client });
+    const result = await runShellCommand(
+      parseShellArgv(["apis", "slug-check", "--slug", "my-api"]),
+      { client },
+    );
     expect(result.ok).toBe(true);
     expect(client.apis.checkSlugAvailability).toHaveBeenCalledWith("my-api", undefined);
   });
@@ -123,7 +134,17 @@ describe("runShellCommand", () => {
       endpoints: { create },
     } as Partial<LaunaClient>);
     const result = await runShellCommand(
-      parseShellArgv(["--sandbox", "endpoints", "create", "--api-id", "api1", "--path", "/v1/*", "--price-usdc", "0.10"]),
+      parseShellArgv([
+        "--sandbox",
+        "endpoints",
+        "create",
+        "--api-id",
+        "api1",
+        "--path",
+        "/v1/*",
+        "--price-usdc",
+        "0.10",
+      ]),
       { client, sandbox: true },
     );
     expect(result.ok).toBe(true);
@@ -162,10 +183,13 @@ describe("runShellCommand", () => {
       sandboxWallet: { get, reset: vi.fn() },
       config: { localDev: vi.fn(), devBalances, devFaucet: vi.fn() },
     } as Partial<LaunaClient>);
-    const result = await runShellCommand(parseShellArgv(["--sandbox", "sandbox-wallet", "get", "--no-wait"]), {
-      client,
-      sandbox: true,
-    });
+    const result = await runShellCommand(
+      parseShellArgv(["--sandbox", "sandbox-wallet", "get", "--no-wait"]),
+      {
+        client,
+        sandbox: true,
+      },
+    );
     expect(result.ok).toBe(true);
     expect(get).toHaveBeenCalled();
     if (result.ok) {
@@ -340,7 +364,9 @@ describe("runShellCommand", () => {
       well_known_url: "https://api.example.com/.well-known/x402.json",
     });
     const client = mockClient({ apis: { discovery } } as Partial<LaunaClient>);
-    const result = await runShellCommand(parseShellArgv(["apis", "discovery", "--id", "api1"]), { client });
+    const result = await runShellCommand(parseShellArgv(["apis", "discovery", "--id", "api1"]), {
+      client,
+    });
     expect(result.ok).toBe(true);
     expect(discovery).toHaveBeenCalledWith("api1");
   });
@@ -348,7 +374,10 @@ describe("runShellCommand", () => {
   it("discovery urls", async () => {
     const discovery = vi.fn().mockResolvedValue({ openapi_url: "https://x/openapi.json" });
     const client = mockClient({ apis: { discovery } } as Partial<LaunaClient>);
-    const result = await runShellCommand(parseShellArgv(["discovery", "urls", "--api-id", "api1"]), { client });
+    const result = await runShellCommand(
+      parseShellArgv(["discovery", "urls", "--api-id", "api1"]),
+      { client },
+    );
     expect(result.ok).toBe(true);
     expect(discovery).toHaveBeenCalledWith("api1");
   });
@@ -393,5 +422,35 @@ describe("runShellCommand", () => {
     const result = await runShellCommand(parseShellArgv(["billing", "overview"]), { client });
     expect(result.ok).toBe(true);
     expect(client.billing.overview).toHaveBeenCalled();
+  });
+});
+
+describe("card endpoint commands", () => {
+  it("preserves explicit card-only pricing", async () => {
+    const create = vi.fn().mockResolvedValue({ id: "ep" });
+    const client = mockClient({ endpoints: { create } } as unknown as Partial<LaunaClient>);
+    const result = await runShellCommand(
+      parseShellArgv([
+        "endpoints",
+        "create",
+        "--api-id",
+        "api",
+        "--path",
+        "/data",
+        "--accepts",
+        "[]",
+        "--card-payment",
+        JSON.stringify({ enabled: true, currency: "usd", amount_minor: "100" }),
+      ]),
+      { client },
+    );
+    expect(result.ok).toBe(true);
+    expect(create).toHaveBeenCalledWith(
+      "api",
+      expect.objectContaining({
+        accepts: [],
+        card_payment: { enabled: true, currency: "usd", amount_minor: "100" },
+      }),
+    );
   });
 });

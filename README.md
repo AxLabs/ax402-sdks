@@ -55,3 +55,7 @@ See [docs/README.md](./docs/README.md) for the full documentation index.
 See [docs/publishing/README.md](./docs/publishing/README.md) for npm/PyPI release setup.
 
 See [AGENTS.md](./AGENTS.md) for AI-agent workflows.
+
+## Card payments
+
+See [seller card acceptance and hosted Checkout](docs/card-payments.md) for configuration, buyer helpers and recovery (unreleased).

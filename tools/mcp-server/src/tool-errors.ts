@@ -2,6 +2,13 @@ import { LaunaError } from "@launaio/sdk";
 
 /** Only static, caller-actionable validation messages belong in this set. */
 const publicMessages = new Set([
+  "card payments are not enabled on this deployment",
+  "link a ready Stripe account before enabling card payments",
+  "card payments currently require a permanent, read-only GET endpoint",
+  "card currency must be usd",
+  "card amount_minor must be an integer from 50 to 99999999",
+  "configure x402 accepts or enabled card pricing",
+  "invalid card_payment",
   "pay_to_address or pay_to_addresses required for user_wallet mode",
   "pay_to_addresses network required",
   "sandbox fork supports exact scheme only",

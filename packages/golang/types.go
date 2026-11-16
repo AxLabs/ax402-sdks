@@ -43,14 +43,14 @@ type LocalDevPaymentToken struct {
 }
 
 type LocalDevConfig struct {
-	Enabled        bool                  `json:"enabled"`
-	ChainID        int64                 `json:"chain_id,omitempty"`
-	Network        string                `json:"network,omitempty"`
-	NetworkName    string                `json:"network_name,omitempty"`
-	RPCURL         string                `json:"rpc_url,omitempty"`
-	NativeSymbol   string                `json:"native_symbol,omitempty"`
-	FaucetEnabled  bool                  `json:"faucet_enabled,omitempty"`
-	PaymentToken   *LocalDevPaymentToken `json:"payment_token,omitempty"`
+	Enabled       bool                  `json:"enabled"`
+	ChainID       int64                 `json:"chain_id,omitempty"`
+	Network       string                `json:"network,omitempty"`
+	NetworkName   string                `json:"network_name,omitempty"`
+	RPCURL        string                `json:"rpc_url,omitempty"`
+	NativeSymbol  string                `json:"native_symbol,omitempty"`
+	FaucetEnabled bool                  `json:"faucet_enabled,omitempty"`
+	PaymentToken  *LocalDevPaymentToken `json:"payment_token,omitempty"`
 }
 
 type DevBalances struct {
@@ -130,21 +130,21 @@ func (m *PayToAddressMap) UnmarshalJSON(b []byte) error {
 }
 
 type CreateAPIInput struct {
-	Name                  string   `json:"name"`
-	Slug                  string   `json:"slug"`
-	UpstreamBaseURL       string   `json:"upstream_base_url"`
-	PayToMode             string   `json:"pay_to_mode,omitempty"`
-	PayToAddress          string   `json:"pay_to_address,omitempty"`
+	Name            string `json:"name"`
+	Slug            string `json:"slug"`
+	UpstreamBaseURL string `json:"upstream_base_url"`
+	PayToMode       string `json:"pay_to_mode,omitempty"`
+	PayToAddress    string `json:"pay_to_address,omitempty"`
 	// PayToAddresses is CAIP-2 → recipient. No omitempty so {} encodes and clears on update.
 	PayToAddresses        PayToAddressMap `json:"pay_to_addresses"`
-	WebhookURL            string   `json:"webhook_url,omitempty"`
-	WebhookSecret         string   `json:"webhook_secret,omitempty"`
-	ClearWebhook          bool     `json:"clear_webhook,omitempty"`
-	CORSAllowedOrigins    []string `json:"cors_allowed_origins,omitempty"`
-	ProxyUnmatched        *bool    `json:"proxy_unmatched,omitempty"`
-	DiscoveryGuidance     string   `json:"discovery_guidance,omitempty"`
-	DiscoveryContactEmail string   `json:"discovery_contact_email,omitempty"`
-	OpenAPIVersion        string   `json:"openapi_version,omitempty"`
+	WebhookURL            string          `json:"webhook_url,omitempty"`
+	WebhookSecret         string          `json:"webhook_secret,omitempty"`
+	ClearWebhook          bool            `json:"clear_webhook,omitempty"`
+	CORSAllowedOrigins    []string        `json:"cors_allowed_origins,omitempty"`
+	ProxyUnmatched        *bool           `json:"proxy_unmatched,omitempty"`
+	DiscoveryGuidance     string          `json:"discovery_guidance,omitempty"`
+	DiscoveryContactEmail string          `json:"discovery_contact_email,omitempty"`
+	OpenAPIVersion        string          `json:"openapi_version,omitempty"`
 }
 
 type APICorsOrigins struct {
@@ -170,41 +170,44 @@ type WebhookDelivery struct {
 }
 
 type Endpoint struct {
-	ID             string         `json:"id"`
-	APIID          string         `json:"api_id"`
-	Method         string         `json:"method"`
-	PathPattern    string         `json:"path_pattern"`
-	Enabled        bool           `json:"enabled"`
-	Accepts        []AcceptOption `json:"accepts"`
-	Description    string         `json:"description,omitempty"`
-	RequestSchema  map[string]any `json:"request_schema,omitempty"`
-	ResponseSchema map[string]any `json:"response_schema,omitempty"`
-	SchemaSource   string         `json:"schema_source,omitempty"`
-	TTL            *int           `json:"ttl,omitempty"`
-	ExpiresAt      string         `json:"expires_at,omitempty"`
+	CardPayment    *CardPaymentConfig `json:"card_payment,omitempty"`
+	ID             string             `json:"id"`
+	APIID          string             `json:"api_id"`
+	Method         string             `json:"method"`
+	PathPattern    string             `json:"path_pattern"`
+	Enabled        bool               `json:"enabled"`
+	Accepts        []AcceptOption     `json:"accepts"`
+	Description    string             `json:"description,omitempty"`
+	RequestSchema  map[string]any     `json:"request_schema,omitempty"`
+	ResponseSchema map[string]any     `json:"response_schema,omitempty"`
+	SchemaSource   string             `json:"schema_source,omitempty"`
+	TTL            *int               `json:"ttl,omitempty"`
+	ExpiresAt      string             `json:"expires_at,omitempty"`
 }
 
 type CreateEndpointInput struct {
-	Method         string         `json:"method"`
-	PathPattern    string         `json:"path_pattern"`
-	Accepts        []AcceptOption `json:"accepts"`
-	Description    string         `json:"description,omitempty"`
-	Enabled        *bool          `json:"enabled,omitempty"`
-	RequestSchema  map[string]any `json:"request_schema,omitempty"`
-	ResponseSchema map[string]any `json:"response_schema,omitempty"`
-	ClearSchemas   *bool          `json:"clear_schemas,omitempty"`
-	TTL            *int           `json:"ttl,omitempty"`
+	CardPayment    *CardPaymentConfig `json:"card_payment,omitempty"`
+	Method         string             `json:"method"`
+	PathPattern    string             `json:"path_pattern"`
+	Accepts        []AcceptOption     `json:"accepts"`
+	Description    string             `json:"description,omitempty"`
+	Enabled        *bool              `json:"enabled,omitempty"`
+	RequestSchema  map[string]any     `json:"request_schema,omitempty"`
+	ResponseSchema map[string]any     `json:"response_schema,omitempty"`
+	ClearSchemas   *bool              `json:"clear_schemas,omitempty"`
+	TTL            *int               `json:"ttl,omitempty"`
 }
 
 type UpdateEndpointInput struct {
-	Method         string         `json:"method,omitempty"`
-	PathPattern    string         `json:"path_pattern,omitempty"`
-	Accepts        []AcceptOption `json:"accepts,omitempty"`
-	Description    string         `json:"description,omitempty"`
-	Enabled        *bool          `json:"enabled,omitempty"`
-	RequestSchema  map[string]any `json:"request_schema,omitempty"`
-	ResponseSchema map[string]any `json:"response_schema,omitempty"`
-	ClearSchemas   *bool          `json:"clear_schemas,omitempty"`
+	CardPayment    *CardPaymentConfig `json:"card_payment,omitempty"`
+	Method         string             `json:"method,omitempty"`
+	PathPattern    string             `json:"path_pattern,omitempty"`
+	Accepts        []AcceptOption     `json:"accepts"`
+	Description    string             `json:"description,omitempty"`
+	Enabled        *bool              `json:"enabled,omitempty"`
+	RequestSchema  map[string]any     `json:"request_schema,omitempty"`
+	ResponseSchema map[string]any     `json:"response_schema,omitempty"`
+	ClearSchemas   *bool              `json:"clear_schemas,omitempty"`
 }
 
 // DiscoveryHostURLs is one verified host's discovery document URLs.

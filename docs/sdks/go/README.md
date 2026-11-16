@@ -71,3 +71,7 @@ cd packages/golang && go test ./...
 ## Examples
 
 See [examples/go/](../../examples/go/) — setup API, pay gateway, stats, wrap OpenAPI. Run from `examples/go` with `go run ./<example>/`.
+
+## Card payments
+
+See [hosted card acceptance](../../card-payments.md) for the unreleased seller API and buyer helpers.

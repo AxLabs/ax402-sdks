@@ -1,3 +1,4 @@
+import type { CardPaymentConfig } from "./card.js";
 export type Credentials =
   | { type: "apiKey"; apiKey: string }
   | { type: "jwt"; token: string };
@@ -361,6 +362,7 @@ export type AcceptOption = {
 };
 
 export type Endpoint = {
+  card_payment?: CardPaymentConfig;
   id: string;
   api_id: string;
   method: string;
@@ -381,6 +383,7 @@ export type Endpoint = {
 };
 
 export type CreateEndpointInput = {
+  card_payment?: CardPaymentConfig | null;
   method: string;
   path_pattern: string;
   description?: string;

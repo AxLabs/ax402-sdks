@@ -27,7 +27,8 @@
     "@x402/fetch": "^2.14.0",
     "@x402/hedera": "^2.20.0",
     "@hiero-ledger/sdk": "^2.70.0",
-    "viem": "^2.49.3"
+    "viem": "^2.49.3",
+    "@launaio/sdk": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

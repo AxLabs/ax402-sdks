@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const CONTROL_SCOPES = [
+  "payment_accounts:read",
+  "payments:read",
   "apis:read",
   "apis:write",
   "endpoints:read",

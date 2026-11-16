@@ -1,3 +1,4 @@
+import type { StripeConnection, CardPayment } from "./card.js";
 import { HttpClient } from "./http.js";
 import type {
   API,
@@ -64,6 +65,7 @@ export type LaunaClientOptions = ClientOptions & {
 
 export class LaunaClient {
   readonly http: HttpClient;
+  readonly cardPayments: CardPaymentsResource;
   readonly auth: AuthResource;
   readonly keys: KeysResource;
   readonly apis: APIsResource;
@@ -85,6 +87,7 @@ export class LaunaClient {
 
     this.http = new HttpClient({ ...opts, credentials });
     this.auth = new AuthResource(this.http);
+    this.cardPayments = new CardPaymentsResource(this.http);
     this.keys = new KeysResource(this.http);
     this.apis = new APIsResource(this.http);
     this.endpoints = new EndpointsResource(this.http);
@@ -141,10 +144,13 @@ class AuthResource {
   }
 
   totpConfirm(code: string) {
-    return this.http.request<{ totp_enabled: boolean; backup_codes: string[] }>("/auth/totp/confirm", {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    });
+    return this.http.request<{ totp_enabled: boolean; backup_codes: string[] }>(
+      "/auth/totp/confirm",
+      {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      },
+    );
   }
 
   totpDisable(password: string, code: string) {
@@ -166,7 +172,9 @@ class AuthResource {
   }
 
   passkeyRegisterOptions() {
-    return this.http.request<PasskeyOptionsResponse>("/auth/passkeys/register/options", { method: "POST" });
+    return this.http.request<PasskeyOptionsResponse>("/auth/passkeys/register/options", {
+      method: "POST",
+    });
   }
 
   passkeyRegisterVerify(body: {
@@ -182,7 +190,9 @@ class AuthResource {
   }
 
   passkeyLoginOptions() {
-    return this.http.request<PasskeyOptionsResponse>("/auth/passkeys/login/options", { method: "POST" });
+    return this.http.request<PasskeyOptionsResponse>("/auth/passkeys/login/options", {
+      method: "POST",
+    });
   }
 
   passkeyLoginVerify(sessionToken: string, credential: unknown) {
@@ -240,10 +250,13 @@ class AuthResource {
   }
 
   patchPreferences(body: { display_currency?: string }) {
-    return this.http.request<{ display_currency?: string; status?: string }>("/auth/me/preferences", {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    });
+    return this.http.request<{ display_currency?: string; status?: string }>(
+      "/auth/me/preferences",
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      },
+    );
   }
 
   deleteAccount(password: string, confirm_email: string) {
@@ -673,5 +686,29 @@ class ConfigResource {
       method: "POST",
       body: JSON.stringify({ address, asset }),
     });
+  }
+}
+
+class CardPaymentsResource {
+  constructor(private http: HttpClient) {}
+  connection() {
+    return this.http.request<StripeConnection>("/payment-accounts/stripe");
+  }
+  connect() {
+    return this.http.request<{ url: string }>("/payment-accounts/stripe/connect", {
+      method: "POST",
+    });
+  }
+  complete(code: string, state: string) {
+    return this.http.request<StripeConnection>("/payment-accounts/stripe/complete", {
+      method: "POST",
+      body: JSON.stringify({ code, state }),
+    });
+  }
+  disconnect() {
+    return this.http.request<void>("/payment-accounts/stripe", { method: "DELETE" });
+  }
+  list() {
+    return this.http.request<CardPayment[]>("/card-payments");
   }
 }

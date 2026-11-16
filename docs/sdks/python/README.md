@@ -109,3 +109,7 @@ cd packages/python && pip install -e ".[dev,buyer]" && pytest
 ## Examples
 
 See [examples/python/](../../examples/python/) — setup API, pay gateway, stats, wrap OpenAPI.
+
+## Card payments
+
+See [hosted card acceptance](../../card-payments.md) for the unreleased seller API and buyer helpers.

@@ -37,6 +37,7 @@ type EndpointPricingInput = {
 
 type EndpointToolInput = EndpointPricingInput & {
   method?: string;
+  card_payment?: { enabled: boolean; currency: "usd"; amount_minor: string } | null;
   path_pattern?: string;
   description?: string;
   enabled?: boolean;
@@ -46,7 +47,10 @@ type EndpointToolInput = EndpointPricingInput & {
   clear_schemas?: boolean;
 };
 
-function endpointAccepts(input: EndpointPricingInput, sandbox: boolean): AcceptOption[] | undefined {
+function endpointAccepts(
+  input: EndpointPricingInput,
+  sandbox: boolean,
+): AcceptOption[] | undefined {
   if (input.accepts) return input.accepts;
 
   const scheme = input.scheme ?? "exact";
@@ -66,18 +70,21 @@ function endpointAccepts(input: EndpointPricingInput, sandbox: boolean): AcceptO
   if (input.amount == null && input.decimals == null) {
     throw new ToolInputError("decimals are required for custom token pricing");
   }
-  return [{
-    scheme,
-    network: input.network,
-    asset: input.asset,
-    amount: input.amount ?? amountToAtomic(price!, input.decimals ?? 6),
-    max_timeout_seconds: 300,
-  }];
+  return [
+    {
+      scheme,
+      network: input.network,
+      asset: input.asset,
+      amount: input.amount ?? amountToAtomic(price!, input.decimals ?? 6),
+      max_timeout_seconds: 300,
+    },
+  ];
 }
 
 function endpointBody(input: EndpointToolInput, sandbox: boolean): Partial<CreateEndpointInput> {
   const accepts = endpointAccepts(input, sandbox);
   return {
+    ...(input.card_payment !== undefined ? { card_payment: input.card_payment } : {}),
     ...(input.method != null ? { method: input.method } : {}),
     ...(input.path_pattern != null ? { path_pattern: input.path_pattern } : {}),
     ...(input.description != null ? { description: input.description } : {}),
@@ -95,8 +102,11 @@ type GetClient = () => LaunaClient;
 function apiHandlers(getClient: GetClient) {
   return {
     listApis: async () => getClient().apis.list(),
+    stripeConnection: async () => getClient().cardPayments.connection(),
+    cardPayments: async () => getClient().cardPayments.list(),
     getApi: async (api_id: string) => getClient().apis.get(api_id),
-    createApi: async (body: Parameters<LaunaClient["apis"]["create"]>[0]) => getClient().apis.create(body),
+    createApi: async (body: Parameters<LaunaClient["apis"]["create"]>[0]) =>
+      getClient().apis.create(body),
     updateApi: async (api_id: string, body: Partial<CreateAPIInput>) =>
       getClient().apis.update(api_id, body),
     deleteApi: async (api_id: string) => getClient().apis.delete(api_id),
@@ -144,10 +154,21 @@ function apiHandlers(getClient: GetClient) {
 function endpointHandlers(getClient: GetClient, sandbox: boolean) {
   return {
     addEndpoint: async (api_id: string, input: EndpointToolInput) => {
-      if (!input.accepts?.length && input.price == null && input.price_usdc == null && input.amount == null) {
-        throw new ToolInputError("endpoint pricing is required; ask the user for price and payment terms");
+      if (
+        !input.card_payment?.enabled &&
+        !input.accepts?.length &&
+        input.price == null &&
+        input.price_usdc == null &&
+        input.amount == null
+      ) {
+        throw new ToolInputError(
+          "endpoint pricing is required; ask the user for price and payment terms",
+        );
       }
-      return getClient().endpoints.create(api_id, endpointBody(input, sandbox) as CreateEndpointInput);
+      return getClient().endpoints.create(
+        api_id,
+        endpointBody(input, sandbox) as CreateEndpointInput,
+      );
     },
     listEndpoints: async (api_id: string) => getClient().endpoints.list(api_id),
     updateEndpoint: async (api_id: string, endpoint_id: string, input: EndpointToolInput) =>
@@ -168,13 +189,16 @@ function endpointHandlers(getClient: GetClient, sandbox: boolean) {
       }),
     parseOpenapi: async (spec: string) => getClient().openapi.parseSpec(spec),
     importOpenapi: async (api_id: string, spec: string, price_usdc: string) =>
-      wrapOpenAPI(getClient(), api_id, spec, [defaultAccept("exact", usdcToAtomic(price_usdc), sandbox)]),
+      wrapOpenAPI(getClient(), api_id, spec, [
+        defaultAccept("exact", usdcToAtomic(price_usdc), sandbox),
+      ]),
   };
 }
 
 function domainHandlers(getClient: GetClient) {
   return {
-    addDomain: async (api_id: string, hostname: string) => getClient().domains.add(api_id, hostname),
+    addDomain: async (api_id: string, hostname: string) =>
+      getClient().domains.add(api_id, hostname),
     listDomains: async (api_id: string) => getClient().domains.list(api_id),
     verifyDomain: async (api_id: string, domain_id: string) =>
       getClient().domains.verify(api_id, domain_id),
@@ -191,12 +215,8 @@ function reportingHandlers(getClient: GetClient) {
     statsApi: async (api_id: string, days: number) => getClient().stats.forApi(api_id, days),
     settlementsList: async (api_id: string) => getClient().settlements.list(api_id),
     settlementsBatch: async (api_id: string) => getClient().settlements.listBatch(api_id),
-    settlementsHistory: async (
-      days = 30,
-      limit?: number,
-      offset?: number,
-      api_id?: string,
-    ) => getClient().settlements.listHistory({ days, limit, offset, apiId: api_id }),
+    settlementsHistory: async (days = 30, limit?: number, offset?: number, api_id?: string) =>
+      getClient().settlements.listHistory({ days, limit, offset, apiId: api_id }),
     settlementsExport: async (format: "csv" | "json", days = 30, api_id?: string) =>
       getClient().settlements.exportHistory({ format, days, apiId: api_id }),
     billingOverview: async () => getClient().billing.overview(),
@@ -244,16 +264,21 @@ export function createToolHandlers(getClient: GetClient, options: { sandbox?: bo
   const sandbox = options.sandbox ?? envRequestsSandbox();
   return {
     sandboxWallet: async () => {
-      if (!sandbox) throw new ToolInputError("sandbox wallet is only available in Sandbox; reconnect with Sandbox access");
+      if (!sandbox)
+        throw new ToolInputError(
+          "sandbox wallet is only available in Sandbox; reconnect with Sandbox access",
+        );
       // Validate the backend's environment and expose only the intended wallet fields.
       // The private key is deliberately available to the agent for sandbox signing.
-      const result = z.object({
-        address: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
-        private_key: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
-        private_key_redacted: z.string(),
-        environment: z.literal("development"),
-        network: z.literal("eip155:845320402"),
-      }).safeParse(await getClient().sandboxWallet.get());
+      const result = z
+        .object({
+          address: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+          private_key: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+          private_key_redacted: z.string(),
+          environment: z.literal("development"),
+          network: z.literal("eip155:845320402"),
+        })
+        .safeParse(await getClient().sandboxWallet.get());
       if (!result.success) throw new Error("invalid sandbox wallet response");
       return result.data;
     },

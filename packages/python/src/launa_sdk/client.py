@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .resources.card_payments import CardPaymentsResource
+
 import os
 
 import httpx
@@ -43,6 +45,7 @@ class LaunaClient:
         self.keys = KeysResource(self._http)
         self.apis = APIsResource(self._http)
         self.endpoints = EndpointsResource(self._http)
+        self.card_payments = CardPaymentsResource(self._http)
         self.domains = DomainsResource(self._http)
         self.openapi = OpenAPIResource(self._http)
         self.stats = StatsResource(self._http)

@@ -190,7 +190,7 @@ describe("hosted MCP HTTP boundary", () => {
         (t) => !["launa_inspect_url", "launa_pay_url"].includes(t.name),
       );
       expect(remote).toEqual(tools);
-      expect(remote).toHaveLength(43);
+      expect(remote).toHaveLength(45);
     } finally {
       await client.close();
       await local.close();

@@ -50,8 +50,8 @@ Seller control-plane reference for agents. API surface: public seller routes on 
 
 | Preset | Scopes |
 |--------|--------|
-| `readonly` | `apis:read`, `endpoints:read`, `domains:read`, `stats:read`, `settlements:read`, `openapi:read`, `billing:read`, `income:read` |
-| `apiManager` | `apis:read`, `apis:write`, `endpoints:read`, `endpoints:write`, `domains:read`, `domains:write`, `openapi:read` |
+| `readonly` | `payment_accounts:read`, `payments:read`, `apis:read`, `endpoints:read`, `domains:read`, `stats:read`, `settlements:read`, `openapi:read`, `billing:read`, `income:read` |
+| `apiManager` | `payment_accounts:read`, `payments:read`, `apis:read`, `apis:write`, `endpoints:read`, `endpoints:write`, `domains:read`, `domains:write`, `openapi:read` |
 | `analytics` | `stats:read`, `settlements:read`, `billing:read`, `income:read` |
 
 ## Common recipes
@@ -211,3 +211,12 @@ Before changing architecture, ownership, compatibility, or established product b
 - When producing structured review feedback, use Conventional Comments (`label (decoration): summary`) and its standard vocabulary. Do not invent a repository-local review taxonomy unless the repository explicitly defines one.
 - Follow more specific repository-owned Git or review instructions where they do not conflict with these managed conventions.
 <!-- END AXLABS MANAGED: git-and-review-conventions -->
+
+## Hosted card acceptance
+
+The unreleased card-payments feature adds `card_payment` endpoint configuration,
+`/payment-accounts/stripe` linking/readiness routes and `/card-payments` history.
+See [the current SDK contract](docs/card-payments.md). Card helpers use an explicit
+buyer-held token and Stripe Checkout, independently of x402. Link/unlink requires
+a recent JWT; no seller credential may be sent through a buyer request. The
+facilitator and commerce settlement event contracts remain unchanged.

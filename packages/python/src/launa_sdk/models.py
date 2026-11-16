@@ -113,7 +113,14 @@ class WebhookDelivery(BaseModel):
     updated_at: str | None = None
 
 
+class CardPaymentConfig(BaseModel):
+    enabled: bool = True
+    currency: str = "usd"
+    amount_minor: str
+
+
 class Endpoint(BaseModel):
+    card_payment: CardPaymentConfig | None = None
     id: str
     api_id: str
     method: str

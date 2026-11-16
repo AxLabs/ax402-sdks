@@ -88,3 +88,7 @@ Browser wallet: `createEvmSignerFromBrowserProvider()` + `BuyerClient.create(sig
 ## License
 
 Apache-2.0
+
+## Card payments
+
+See [seller card acceptance and hosted Checkout](../../docs/card-payments.md) for configuration, buyer helpers and recovery (unreleased).

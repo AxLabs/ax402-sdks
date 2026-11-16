@@ -14,7 +14,11 @@ import { shellErrorFromUnknown } from "./format.js";
 import type { ParsedShellCommand, ShellExecuteContext, ShellResult } from "./types.js";
 
 function usage(msg: string): ShellResult {
-  return { ok: false, kind: "usage", error: msg ? `${msg}\n\n${shellUsageText()}` : shellUsageText() };
+  return {
+    ok: false,
+    kind: "usage",
+    error: msg ? `${msg}\n\n${shellUsageText()}` : shellUsageText(),
+  };
 }
 
 function defaultUsdcAccept(
@@ -47,8 +51,8 @@ function acceptsFromFlags(parsed: ParsedShellCommand): AcceptOption[] | ShellRes
   if (acceptsRaw) {
     try {
       const parsedAccepts = JSON.parse(acceptsRaw) as unknown;
-      if (!Array.isArray(parsedAccepts) || parsedAccepts.length === 0) {
-        return usage("--accepts must be a non-empty JSON array");
+      if (!Array.isArray(parsedAccepts)) {
+        return usage("--accepts must be a JSON array (use [] for cards only)");
       }
       return parsedAccepts as AcceptOption[];
     } catch {
@@ -106,7 +110,10 @@ async function readSpec(
   const file = flag(parsed, "--file");
   if (file) {
     if (!ctx.readFile) {
-      return { ok: false, error: "--file is not supported in this environment; use --spec with pasted content" };
+      return {
+        ok: false,
+        error: "--file is not supported in this environment; use --spec with pasted content",
+      };
     }
     return ctx.readFile(file);
   }
@@ -131,6 +138,9 @@ export async function runShellCommand(
       return usage("command required");
     }
 
+    if (cmd === "cards" && sub === "connection")
+      return { ok: true, data: await c.cardPayments.connection() };
+    if (cmd === "cards" && sub === "list") return { ok: true, data: await c.cardPayments.list() };
     if (cmd === "apis" && sub === "list") {
       return { ok: true, data: await c.apis.list() };
     }
@@ -141,7 +151,8 @@ export async function runShellCommand(
       if (!name || !slug || !upstream) return usage("--name, --slug, --upstream required");
       const payTo = flag(parsed, "--pay-to");
       const payToAddressesRaw = flag(parsed, "--pay-to-addresses");
-      const payToAddresses = payToAddressesRaw !== undefined ? parsePayToAddressesFlag(payToAddressesRaw) : undefined;
+      const payToAddresses =
+        payToAddressesRaw !== undefined ? parsePayToAddressesFlag(payToAddressesRaw) : undefined;
       if (typeof payToAddresses === "string") return usage(payToAddresses);
       const webhookUrl = flag(parsed, "--webhook-url");
       const webhookSecret = flag(parsed, "--webhook-secret");
@@ -254,7 +265,10 @@ export async function runShellCommand(
       const apiId = flag(parsed, "--api-id");
       const originsRaw = flag(parsed, "--origins");
       if (!apiId || !originsRaw) return usage("--api-id and --origins required");
-      const origins = originsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+      const origins = originsRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       return { ok: true, data: await c.apis.putCors(apiId, origins) };
     }
     if (cmd === "apis" && sub === "cors-add") {
@@ -294,6 +308,7 @@ export async function runShellCommand(
         accepts = [built];
       }
       const body: {
+        card_payment?: import("../card.js").CardPaymentConfig | null;
         method: string;
         path_pattern: string;
         accepts: AcceptOption[];
@@ -305,9 +320,18 @@ export async function runShellCommand(
         path_pattern: path,
         accepts,
       };
+      const cardRaw = flag(parsed, "--card-payment");
+      if (cardRaw !== undefined) {
+        try {
+          body.card_payment = JSON.parse(cardRaw);
+        } catch {
+          return usage("--card-payment must be valid JSON");
+        }
+      }
       if (ttlRaw !== undefined && ttlRaw !== "") {
         const ttl = parseInt(ttlRaw, 10);
-        if (!Number.isFinite(ttl) || ttl <= 0) return usage("--ttl must be a positive number of seconds");
+        if (!Number.isFinite(ttl) || ttl <= 0)
+          return usage("--ttl must be a positive number of seconds");
         body.ttl = ttl;
       }
       const reqSchemaRaw = flag(parsed, "--request-schema");
@@ -334,6 +358,14 @@ export async function runShellCommand(
       const enabled = flag(parsed, "--enabled");
       if (!apiId || !endpointId) return usage("--api-id and --endpoint-id required");
       const body: Record<string, unknown> = {};
+      const cardRaw = flag(parsed, "--card-payment");
+      if (cardRaw !== undefined) {
+        try {
+          body.card_payment = JSON.parse(cardRaw);
+        } catch {
+          return usage("--card-payment must be valid JSON");
+        }
+      }
       if (enabled !== undefined) body.enabled = enabled === "true";
       const fromFlags = acceptsFromFlags(parsed);
       if (fromFlags && typeof fromFlags === "object" && "ok" in fromFlags) return fromFlags;
@@ -435,11 +467,15 @@ export async function runShellCommand(
       return { ok: true, data: { status: "revoked" } };
     }
 
-    if ((cmd === "sandbox-wallet" || cmd === "sandbox_wallet") && (sub === "get" || sub === "reset")) {
+    if (
+      (cmd === "sandbox-wallet" || cmd === "sandbox_wallet") &&
+      (sub === "get" || sub === "reset")
+    ) {
       if (!ctx.sandbox) {
         return {
           ok: false,
-          error: "sandbox-wallet requires --sandbox (or LAUNA_ENVIRONMENT=development / LAUNA_SANDBOX=1)",
+          error:
+            "sandbox-wallet requires --sandbox (or LAUNA_ENVIRONMENT=development / LAUNA_SANDBOX=1)",
         };
       }
       const wallet = sub === "reset" ? await c.sandboxWallet.reset() : await c.sandboxWallet.get();
@@ -589,7 +625,9 @@ export async function runShellCommand(
       const settle = flag(parsed, "--settle-interval-secs");
       const refund = flag(parsed, "--refund-interval-secs");
       if (!claim || !settle || !refund) {
-        return usage("--claim-interval-secs, --settle-interval-secs, --refund-interval-secs required");
+        return usage(
+          "--claim-interval-secs, --settle-interval-secs, --refund-interval-secs required",
+        );
       }
       return {
         ok: true,

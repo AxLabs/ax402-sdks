@@ -3,6 +3,10 @@ import { createToolHandlers } from "./tools.js";
 
 describe("mcp tool handlers", () => {
   const mockClient = {
+    cardPayments: {
+      connection: vi.fn(async () => ({ connected: true })),
+      list: vi.fn(async () => []),
+    },
     sandboxWallet: { get: vi.fn() },
     apis: {
       list: vi.fn(async () => [{ id: "1" }]),
@@ -49,23 +53,37 @@ describe("mcp tool handlers", () => {
   });
 
   it("requires pricing instead of silently choosing a charge", async () => {
-    await expect(handlers.addEndpoint("api", { method: "GET", path_pattern: "/get" }))
-      .rejects.toThrow("endpoint pricing is required");
-    await expect(handlers.addEndpoint("api", { price: "1", network: "eip155:1", asset: "token" }))
-      .rejects.toThrow("decimals are required");
+    await expect(
+      handlers.addEndpoint("api", { method: "GET", path_pattern: "/get" }),
+    ).rejects.toThrow("endpoint pricing is required");
+    await expect(
+      handlers.addEndpoint("api", { price: "1", network: "eip155:1", asset: "token" }),
+    ).rejects.toThrow("decimals are required");
     expect(mockClient.endpoints.create).not.toHaveBeenCalled();
   });
 
   it("returns the prepared sandbox key only in Sandbox and strips unrelated fields", async () => {
-    const wallet = { address: `0x${"1".repeat(40)}`, private_key: `0x${"2".repeat(64)}`,
-      private_key_redacted: "redacted", environment: "development", network: "eip155:845320402" };
-    mockClient.sandboxWallet.get.mockResolvedValue({ ...wallet, unrelated_secret: "must-not-return" });
+    const wallet = {
+      address: `0x${"1".repeat(40)}`,
+      private_key: `0x${"2".repeat(64)}`,
+      private_key_redacted: "redacted",
+      environment: "development",
+      network: "eip155:845320402",
+    };
+    mockClient.sandboxWallet.get.mockResolvedValue({
+      ...wallet,
+      unrelated_secret: "must-not-return",
+    });
     const live = createToolHandlers(() => mockClient as never, { sandbox: false });
     await expect(live.sandboxWallet()).rejects.toThrow("only available in Sandbox");
     expect(mockClient.sandboxWallet.get).not.toHaveBeenCalled();
     const sandbox = createToolHandlers(() => mockClient as never, { sandbox: true });
     expect(await sandbox.sandboxWallet()).toEqual(wallet);
-    for (const invalid of [{ environment: "production" }, { network: "eip155:8453" }, { private_key: "invalid-secret" }]) {
+    for (const invalid of [
+      { environment: "production" },
+      { network: "eip155:8453" },
+      { private_key: "invalid-secret" },
+    ]) {
       mockClient.sandboxWallet.get.mockResolvedValue({ ...wallet, ...invalid });
       await expect(sandbox.sandboxWallet()).rejects.toThrow(/^invalid sandbox wallet response$/);
     }
@@ -103,13 +121,15 @@ describe("mcp tool handlers", () => {
     expect(mockClient.endpoints.create).toHaveBeenCalledWith("api-1", {
       method: "POST",
       path_pattern: "/search",
-      accepts: [{
-        scheme: "exact",
-        network: "hedera:mainnet",
-        asset: "0.0.123",
-        amount: "125000000",
-        max_timeout_seconds: 300,
-      }],
+      accepts: [
+        {
+          scheme: "exact",
+          network: "hedera:mainnet",
+          asset: "0.0.123",
+          amount: "125000000",
+          max_timeout_seconds: 300,
+        },
+      ],
       request_schema: { type: "object" },
     });
   });
@@ -117,23 +137,27 @@ describe("mcp tool handlers", () => {
   it("passes endpoint updates and deletes to the SDK", async () => {
     await handlers.updateEndpoint("api-1", "endpoint-1", {
       enabled: false,
-      accepts: [{
-        scheme: "exact",
-        network: "eip155:1",
-        asset: "0xtoken",
-        amount: "100",
-      }],
+      accepts: [
+        {
+          scheme: "exact",
+          network: "eip155:1",
+          asset: "0xtoken",
+          amount: "100",
+        },
+      ],
     });
     await handlers.deleteEndpoint("api-1", "endpoint-1");
 
     expect(mockClient.endpoints.update).toHaveBeenCalledWith("api-1", "endpoint-1", {
       enabled: false,
-      accepts: [{
-        scheme: "exact",
-        network: "eip155:1",
-        asset: "0xtoken",
-        amount: "100",
-      }],
+      accepts: [
+        {
+          scheme: "exact",
+          network: "eip155:1",
+          asset: "0xtoken",
+          amount: "100",
+        },
+      ],
     });
     expect(mockClient.endpoints.delete).toHaveBeenCalledWith("api-1", "endpoint-1");
   });
@@ -142,10 +166,7 @@ describe("mcp tool handlers", () => {
     await handlers.addCorsOrigin("api-1", "https://app.example.com");
     await handlers.updateBatchSettings("api-1", 900, 3600, 86400);
 
-    expect(mockClient.apis.addCorsOrigin).toHaveBeenCalledWith(
-      "api-1",
-      "https://app.example.com",
-    );
+    expect(mockClient.apis.addCorsOrigin).toHaveBeenCalledWith("api-1", "https://app.example.com");
     expect(mockClient.apis.updateBatchSettings).toHaveBeenCalledWith("api-1", {
       claim_interval_secs: 900,
       settle_interval_secs: 3600,
@@ -188,5 +209,23 @@ describe("mcp tool handlers", () => {
     if (prev2) process.env.EVM_PRIVATE_KEY = prev2;
     if (prevHAcc) process.env.HEDERA_ACCOUNT_ID = prevHAcc;
     if (prevHKey) process.env.HEDERA_PRIVATE_KEY = prevHKey;
+  });
+  it("configures card-only pricing and reads card state", async () => {
+    const handlers = createToolHandlers(() => mockClient as any);
+    await handlers.addEndpoint("api", {
+      method: "GET",
+      path_pattern: "/data",
+      accepts: [],
+      card_payment: { enabled: true, currency: "usd", amount_minor: "100" },
+    });
+    expect(mockClient.endpoints.create).toHaveBeenCalledWith(
+      "api",
+      expect.objectContaining({
+        accepts: [],
+        card_payment: { enabled: true, currency: "usd", amount_minor: "100" },
+      }),
+    );
+    expect(await handlers.stripeConnection()).toEqual({ connected: true });
+    expect(await handlers.cardPayments()).toEqual([]);
   });
 });

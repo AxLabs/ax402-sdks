@@ -2,6 +2,24 @@ import type { ShellResourceDef } from "./types.js";
 
 export const SHELL_RESOURCES: ShellResourceDef[] = [
   {
+    id: "cards",
+    label: "Card acceptance",
+    methods: [
+      {
+        id: "connection",
+        label: "Stripe connection",
+        flags: [],
+        sdkSnippet: "await client.cardPayments.connection()",
+      },
+      {
+        id: "list",
+        label: "Recent payments",
+        flags: [],
+        sdkSnippet: "await client.cardPayments.list()",
+      },
+    ],
+  },
+  {
     id: "apis",
     label: "APIs",
     methods: [
@@ -157,8 +175,15 @@ export const SHELL_RESOURCES: ShellResourceDef[] = [
         label: "Create",
         flags: [
           { name: "--api-id", required: true, type: "string" },
+          {
+            name: "--card-payment",
+            required: false,
+            type: "string",
+            placeholder: '{"enabled":true,"currency":"usd","amount_minor":"100"}',
+          },
           { name: "--method", required: false, type: "string", defaultValue: "GET" },
           { name: "--path", required: true, type: "string", placeholder: "/v1/*" },
+          { name: "--accepts", required: false, type: "string", placeholder: "[]" },
           { name: "--price-usdc", required: false, type: "number", defaultValue: "0.10" },
           { name: "--price", required: false, type: "number", placeholder: "0.10" },
           { name: "--network", required: false, type: "string", placeholder: "hedera:mainnet" },
@@ -166,8 +191,18 @@ export const SHELL_RESOURCES: ShellResourceDef[] = [
           { name: "--decimals", required: false, type: "number", defaultValue: "6" },
           { name: "--scheme", required: false, type: "string", defaultValue: "exact" },
           { name: "--ttl", required: false, type: "number", placeholder: "1800" },
-          { name: "--request-schema", required: false, type: "string", placeholder: '{"type":"object",...}' },
-          { name: "--response-schema", required: false, type: "string", placeholder: '{"type":"object",...}' },
+          {
+            name: "--request-schema",
+            required: false,
+            type: "string",
+            placeholder: '{"type":"object",...}',
+          },
+          {
+            name: "--response-schema",
+            required: false,
+            type: "string",
+            placeholder: '{"type":"object",...}',
+          },
         ],
         sdkSnippet: `await client.endpoints.create("API_ID", {
   method: "GET",
@@ -190,9 +225,25 @@ export const SHELL_RESOURCES: ShellResourceDef[] = [
           { name: "--amount", required: false, type: "string", placeholder: "100000" },
           { name: "--decimals", required: false, type: "number", defaultValue: "6" },
           { name: "--scheme", required: false, type: "string", defaultValue: "exact" },
-          { name: "--accepts", required: false, type: "string", placeholder: '[{"scheme":"exact",...}]' },
-          { name: "--request-schema", required: false, type: "string", placeholder: '{"type":"object",...}' },
-          { name: "--response-schema", required: false, type: "string", placeholder: '{"type":"object",...}' },
+          { name: "--card-payment", required: false, type: "string" },
+          {
+            name: "--accepts",
+            required: false,
+            type: "string",
+            placeholder: '[{"scheme":"exact",...}]',
+          },
+          {
+            name: "--request-schema",
+            required: false,
+            type: "string",
+            placeholder: '{"type":"object",...}',
+          },
+          {
+            name: "--response-schema",
+            required: false,
+            type: "string",
+            placeholder: '{"type":"object",...}',
+          },
           { name: "--clear-schemas", required: false, type: "boolean" },
         ],
         sdkSnippet:
@@ -338,7 +389,7 @@ await client.sandboxWallet.reset();`,
           { name: "--spec", required: false, type: "textarea", label: "OpenAPI spec (YAML/JSON)" },
           { name: "--file", required: false, type: "string", label: "File path (CLI only)" },
         ],
-        sdkSnippet: 'await client.openapi.parseSpec(openApiYamlString)',
+        sdkSnippet: "await client.openapi.parseSpec(openApiYamlString)",
       },
       {
         id: "import",
@@ -374,8 +425,7 @@ await client.sandboxWallet.reset();`,
             placeholder: "https://myapi.example.com",
           },
         ],
-        sdkSnippet:
-          'npx -y @agentcash/discovery@latest check "https://myapi.example.com"',
+        sdkSnippet: 'npx -y @agentcash/discovery@latest check "https://myapi.example.com"',
       },
     ],
   },
@@ -443,9 +493,24 @@ await client.sandboxWallet.reset();`,
     id: "billing",
     label: "Billing",
     methods: [
-      { id: "overview", label: "Overview", flags: [], sdkSnippet: "await client.billing.overview()" },
-      { id: "packages", label: "Packages", flags: [], sdkSnippet: "await client.billing.packages()" },
-      { id: "invoices", label: "Invoices", flags: [], sdkSnippet: "await client.billing.invoices()" },
+      {
+        id: "overview",
+        label: "Overview",
+        flags: [],
+        sdkSnippet: "await client.billing.overview()",
+      },
+      {
+        id: "packages",
+        label: "Packages",
+        flags: [],
+        sdkSnippet: "await client.billing.packages()",
+      },
+      {
+        id: "invoices",
+        label: "Invoices",
+        flags: [],
+        sdkSnippet: "await client.billing.invoices()",
+      },
     ],
   },
   {
@@ -507,7 +572,12 @@ await client.sandboxWallet.reset();`,
         ],
         sdkSnippet: 'await client.exchangeRates.list({ quote: "usd" })',
       },
-      { id: "supported", label: "Supported", flags: [], sdkSnippet: "await client.exchangeRates.supported()" },
+      {
+        id: "supported",
+        label: "Supported",
+        flags: [],
+        sdkSnippet: "await client.exchangeRates.supported()",
+      },
       {
         id: "lookup",
         label: "Lookup",
@@ -540,7 +610,8 @@ await client.sandboxWallet.reset();`,
           { name: "--settle-interval-secs", required: true, type: "number" },
           { name: "--refund-interval-secs", required: true, type: "number" },
         ],
-        sdkSnippet: 'await client.apis.updateBatchSettings("API_ID", { claim_interval_secs: 900, settle_interval_secs: 3600, refund_interval_secs: 86400 })',
+        sdkSnippet:
+          'await client.apis.updateBatchSettings("API_ID", { claim_interval_secs: 900, settle_interval_secs: 3600, refund_interval_secs: 86400 })',
       },
     ],
   },
@@ -601,6 +672,12 @@ await client.sandboxWallet.reset();`,
         label: "Inspect URL",
         flags: [
           { name: "--url", required: true, type: "url" },
+          {
+            name: "--card-payment",
+            required: false,
+            type: "string",
+            placeholder: '{"enabled":true,"currency":"usd","amount_minor":"100"}',
+          },
           { name: "--method", required: false, type: "string", defaultValue: "GET" },
         ],
         sdkSnippet: 'await fetch("https://gateway.example/v1/foo") // HTTP 402 + payment headers',
@@ -616,6 +693,12 @@ await client.sandboxWallet.reset();`,
         label: "Pay URL",
         flags: [
           { name: "--url", required: true, type: "url" },
+          {
+            name: "--card-payment",
+            required: false,
+            type: "string",
+            placeholder: '{"enabled":true,"currency":"usd","amount_minor":"100"}',
+          },
           { name: "--method", required: false, type: "string", defaultValue: "GET" },
         ],
         sdkSnippet: 'await buyer.pay({ url: "https://gateway.example/v1/foo" })',
@@ -636,7 +719,9 @@ export function shellUsageText(): string {
         .filter((f) => !f.required)
         .map((f) => (f.type === "boolean" ? `[${f.name}]` : `[${f.name} VALUE]`))
         .join(" ");
-      lines.push(`  ${resource.id} ${method.id}${flagParts ? " " + flagParts : ""}${optional ? " " + optional : ""}`);
+      lines.push(
+        `  ${resource.id} ${method.id}${flagParts ? " " + flagParts : ""}${optional ? " " + optional : ""}`,
+      );
     }
   }
   lines.push("  inspect url — gateway URL only (no API key)");
