@@ -468,6 +468,12 @@ function formatInspect(data: Record<string, unknown>): string {
   } else {
     lines.push("(empty body)");
   }
+  if (data.status === 402 && data.cardPayment) {
+    lines.push("", "Cards via Stripe Checkout (Launa card protocol):", ...formatValue(data.cardPayment, 1));
+    lines.push("Use CardCheckout to start checkout, retain the token, then check status and resume.");
+    lines.push("This card offer is separate from x402 and is not an MPP challenge.");
+  }
+  if (typeof data.paymentParseError === "string") lines.push(data.paymentParseError);
   return lines.join("\n");
 }
 
