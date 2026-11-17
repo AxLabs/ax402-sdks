@@ -8,8 +8,13 @@ export type StripeConnection = {
   ready: boolean;
   account_id?: string;
   environment?: string;
+  stripe_environment?: string;
+  requirements?: string[];
+  disabled_reason?: string;
 };
 export type CardPayment = {
+  stripe_environment?: string;
+  refunded_amount_minor?: number;
   id: string;
   api_id: string;
   endpoint_id: string;
@@ -108,3 +113,13 @@ export class CardCheckout {
     return this.request("resume", signal);
   }
 }
+
+export type CardPaymentStats = {
+ checkout_count: number;
+ paid_count: number;
+ delivered_count: number;
+ refunded_count: number;
+ disputed_count: number;
+ gross_minor: number;
+ refunded_minor: number;
+};

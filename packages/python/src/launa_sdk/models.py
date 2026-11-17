@@ -204,7 +204,18 @@ class OpenAPIImportResult(BaseModel):
     endpoints: list[Endpoint] = Field(default_factory=list)
 
 
+class CardPaymentStats(BaseModel):
+    checkout_count: int = 0
+    paid_count: int = 0
+    delivered_count: int = 0
+    refunded_count: int = 0
+    disputed_count: int = 0
+    gross_minor: int = 0
+    refunded_minor: int = 0
+
+
 class StatsOverview(BaseModel):
+    card_payments: CardPaymentStats | None = None
     total_requests: int = 0
     payment_required: int = 0
     paid_requests: int = 0

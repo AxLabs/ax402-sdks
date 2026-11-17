@@ -1,4 +1,4 @@
-import type { CardPaymentConfig } from "./card.js";
+import type { CardPaymentConfig, CardPaymentStats } from "./card.js";
 export type Credentials =
   | { type: "apiKey"; apiKey: string }
   | { type: "jwt"; token: string };
@@ -508,6 +508,7 @@ export type DayFiatAmount = {
 };
 
 export type StatsOverview = {
+  card_payments?: CardPaymentStats;
   total_requests: number;
   payment_required: number;
   paid_requests: number;
@@ -527,6 +528,7 @@ export type StatsOverview = {
 };
 
 export type APIStats = {
+  card_payments?: CardPaymentStats;
   api_id: string;
   api_name?: string;
   total_requests: number;

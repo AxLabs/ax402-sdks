@@ -164,3 +164,17 @@ execution claim can produce `recovery_required`; retain the token and contact
 the seller with the purchase ID instead of paying again. `refund_pending` does
 not mean money has already been returned. A removed endpoint can still recover
 an existing cached result while its API hostname remains configured.
+
+
+Staging may set `CARD_STRIPE_MODE=sandbox`, independently of settlement-package
+billing, so both Launa environments use Stripe sandbox. Connections still belong
+to a single Launa environment. `stripe_environment` identifies the provider mode.
+Local disconnect disables that environment only; remove Launa in Stripe Dashboard
+to revoke access to the account across all environments.
+
+Overview/API stats expose optional `card_payments` totals. `paid_count` includes
+verified payments later refunded or disputed; `delivered_count` counts each
+completed purchase once. `gross_minor` and `refunded_minor` are USD minor units
+before Stripe fees, for purchases created within the selected period. Existing
+on-chain statistics retain their meaning. The recent payment list is limited to
+100 rows and must not be summed to derive totals.
